@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Copyright (C) 2026 ferlagod
+  Mis Marcadores — https://github.com/ferlagod/mis_marcadores
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_new_bookmark"
+        android:shortcutId="new_bookmark"
+        android:shortcutLongLabel="@string/shortcut_new_bookmark_long"
+        android:shortcutShortLabel="@string/shortcut_new_bookmark_short">
+        <intent
+            android:action="com.ferlagod.mismarcadores.action.NEW_BOOKMARK"
+            android:targetClass="com.ferlagod.mismarcadores.MainActivity"
+            android:targetPackage="com.ferlagod.mismarcadores" />
+    </shortcut>
+</shortcuts>

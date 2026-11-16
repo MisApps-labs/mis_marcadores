@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Copyright (C) 2026 ferlagod
+  Mis Marcadores — https://github.com/ferlagod/mis_marcadores
+-->
+<resources>
+    <color name="window_background">#FFF2F2F7</color>
+    <!-- Verde agua del logo: color de la pantalla de arranque -->
+    <color name="splash_background">#FF61BBA0</color>
+</resources>
