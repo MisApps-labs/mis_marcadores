@@ -149,7 +149,11 @@ class SyncRepository private constructor(context: Context) {
     suspend fun connectAccount(credentials: NextcloudCredentials): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
-                val client = createClient(credentials)
+                // La ruta WebDAV usa el id interno del usuario, que puede no ser el nombre con el
+                // que inicia sesión (p. ej. el correo). Si el servidor no lo dice, se usa el nombre.
+                val resolved = if (credentials.userId != null || "/remote.php/dav/files/" in credentials.serverUrl) credentials
+                else credentials.copy(userId = WebDavClient.fetchUserId(credentials.serverUrl, credentials.username, credentials.appPassword))
+                val client = createClient(resolved)
                 client.ensureRootFolder()
                 client.listRemoteFiles()
 
@@ -168,7 +172,7 @@ class SyncRepository private constructor(context: Context) {
                         folderDao.resetSyncMetadata()
                         tombstoneDao.clear()
                     }
-                    authPreferences.saveCredentials(credentials.serverUrl, credentials.username, credentials.appPassword)
+                    authPreferences.saveCredentials(resolved)
                     authPreferences.clearLegacyVault()
                 }
                 Result.success(Unit)

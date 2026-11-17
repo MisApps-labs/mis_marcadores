@@ -89,4 +89,34 @@ class NetscapeBookmarksTest {
         val root = NetscapeBookmarks.parsePlainText("https://a.example\nnada\nmira www.b.example/x\nhttps://a.example/")
         assertEquals(listOf("https://a.example", "https://www.b.example/x"), root.bookmarks.map { it.url })
     }
+
+    @Test
+    fun exportThenImportKeepsFolderColorAndImages() {
+        val folder = FolderEntity(id = "f1", name = "Lecturas", color = "BLUE")
+        val bookmark = BookmarkEntity(
+            id = "b1",
+            folderId = "f1",
+            url = "https://example.com/a",
+            title = "A",
+            imageUrl = "https://example.com/og.png?x=1&y=2",
+            faviconUrl = "https://example.com/favicon.ico"
+        )
+        val root = NetscapeBookmarks.parse(NetscapeBookmarks.export(listOf(folder), listOf(bookmark)))
+
+        val imported = root.folders.single()
+        assertEquals("BLUE", imported.color)
+        val b = imported.bookmarks.single()
+        assertEquals("https://example.com/og.png?x=1&y=2", b.imageUrl)
+        assertEquals("https://example.com/favicon.ico", b.faviconUrl)
+    }
+
+    @Test
+    fun ignoresEmbeddedIcons() {
+        val html = """
+            <DL><p>
+                <DT><A HREF="https://example.com" ICON="data:image/png;base64,AAAA" ICON_URI="data:image/png;base64,AAAA">Ej</A>
+            </DL><p>
+        """.trimIndent()
+        assertEquals(null, NetscapeBookmarks.parse(html).bookmarks.single().faviconUrl)
+    }
 }

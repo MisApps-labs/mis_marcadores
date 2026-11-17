@@ -12,7 +12,7 @@ import com.ferlagod.mismarcadores.data.metadata.HtmlMetadataParser
 import com.ferlagod.mismarcadores.util.UrlUtils
 
 /** Carpeta leída de un fichero de marcadores. */
-class ImportedFolder(val name: String) {
+class ImportedFolder(val name: String, val color: String? = null) {
     val folders = mutableListOf<ImportedFolder>()
     val bookmarks = mutableListOf<ImportedBookmark>()
 
@@ -30,7 +30,9 @@ data class ImportedBookmark(
     val modifiedAt: Long? = null,
     val isFavorite: Boolean = false,
     val isReadLater: Boolean = false,
-    val color: String? = null
+    val color: String? = null,
+    val imageUrl: String? = null,
+    val faviconUrl: String? = null
 )
 
 /**
@@ -38,7 +40,8 @@ data class ImportedBookmark(
  * marcadores (Chrome, Firefox, Safari, Edge…) y servicios como linkding, Raindrop o Pocket.
  *
  * Además de los atributos estándar (HREF, ADD_DATE, LAST_MODIFIED, TAGS y TOREAD de linkding/Pocket)
- * se guardan DATA-FAVORITE, DATA-COLOR y DATA-NOTES para no perder nada al restaurar una copia
+ * se guardan DATA-FAVORITE, DATA-COLOR (también en carpetas), DATA-NOTES, DATA-IMAGE e ICON_URI
+ * (el de Firefox) para no perder nada al restaurar una copia
  * de Mis Marcadores. Los navegadores los ignoran.
  */
 object NetscapeBookmarks {
@@ -68,7 +71,8 @@ object NetscapeBookmarks {
             val token = m.value
             when {
                 m.groups[1] != null || token.startsWith("<h3", ignoreCase = true) -> {
-                    val folder = ImportedFolder(text(m.groupValues[2]).ifBlank { "—" })
+                    val folderAttrs = attributes(m.groupValues[1])
+                    val folder = ImportedFolder(text(m.groupValues[2]).ifBlank { "—" }, folderAttrs["data-color"])
                     stack.last().folders += folder
                     pendingFolder = folder
                     lastBookmark = null
@@ -102,7 +106,10 @@ object NetscapeBookmarks {
                         modifiedAt = attrs["last_modified"]?.toLongOrNull()?.let(::toMillis),
                         isFavorite = attrs["data-favorite"] == "1",
                         isReadLater = attrs["toread"] == "1",
-                        color = attrs["data-color"]
+                        color = attrs["data-color"],
+                        imageUrl = attrs["data-image"]?.let(HtmlMetadataParser::decodeEntities)?.let(::webUrlOrNull),
+                        // ICON_URI es el atributo estándar de Firefox para la dirección del icono.
+                        faviconUrl = attrs["icon_uri"]?.let(HtmlMetadataParser::decodeEntities)?.let(::webUrlOrNull)
                     )
                     lastBookmark = folder to folder.bookmarks.lastIndex
                 }
@@ -131,6 +138,10 @@ object NetscapeBookmarks {
         }
         return root
     }
+
+    /** Solo direcciones http(s): se descartan los iconos incrustados (data:) y otros esquemas. */
+    private fun webUrlOrNull(value: String): String? =
+        value.trim().takeIf { it.startsWith("https://", ignoreCase = true) || it.startsWith("http://", ignoreCase = true) }
 
     /** Fechas en segundos (formato estándar) o, si son enormes, ya en milisegundos/microsegundos. */
     internal fun toMillis(value: Long): Long? = when {
@@ -172,7 +183,9 @@ object NetscapeBookmarks {
             for (folder in children[parentId].orEmpty().sortedBy { it.name.lowercase() }) {
                 if (!written.add(folder.id)) continue
                 sb.append(inner).append("<DT><H3 ADD_DATE=\"").append(folder.updatedAt / 1000)
-                    .append("\" LAST_MODIFIED=\"").append(folder.updatedAt / 1000).append("\">")
+                    .append("\" LAST_MODIFIED=\"").append(folder.updatedAt / 1000).append('"')
+                if (folder.color != "DEFAULT") sb.append(" DATA-COLOR=\"").append(escape(folder.color)).append('"')
+                sb.append(">")
                     .append(escape(folder.name)).append("</H3>\n")
                 writeList(folder.id, inner)
             }
@@ -185,6 +198,8 @@ object NetscapeBookmarks {
                 if (b.isFavorite) sb.append(" DATA-FAVORITE=\"1\"")
                 if (b.color != "DEFAULT") sb.append(" DATA-COLOR=\"").append(escape(b.color)).append('"')
                 if (b.notes.isNotBlank()) sb.append(" DATA-NOTES=\"").append(escape(b.notes)).append('"')
+                b.imageUrl?.takeIf { it.isNotBlank() }?.let { sb.append(" DATA-IMAGE=\"").append(escape(it)).append('"') }
+                b.faviconUrl?.takeIf { it.isNotBlank() }?.let { sb.append(" ICON_URI=\"").append(escape(it)).append('"') }
                 sb.append('>').append(escape(b.title.ifBlank { b.url })).append("</A>\n")
                 if (b.description.isNotBlank()) sb.append(inner).append("<DD>").append(escape(b.description)).append('\n')
             }

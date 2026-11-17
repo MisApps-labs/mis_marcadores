@@ -189,6 +189,8 @@ fun BookmarkEditorScreen(
     var showFolderPicker by remember { mutableStateOf(false) }
     var showNewFolder by remember { mutableStateOf(false) }
     var showDiscard by remember { mutableStateOf(false) }
+    /** Marcador existente que se quiere ver (aviso de duplicado) tras decidir qué hacer con los cambios. */
+    var pendingOpenId by remember { mutableStateOf<String?>(null) }
     var showMenu by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var showColors by rememberSaveable { mutableStateOf(existing?.color != null && existing.color != LabelColor.DEFAULT.key) }
@@ -231,14 +233,26 @@ fun BookmarkEditorScreen(
             urlError = msgInvalidUrl
             return
         }
+        val requested = url
         scope.launch {
             fetching = true
             val meta = actions.fetchMetadata(target)
             fetching = false
-            fetchedFor = url
-            if (meta != null) applyMetadata(meta, overwriteText)
+            // Si la dirección cambió mientras se descargaba, estos datos ya no le corresponden.
+            if (url != requested) return@launch
+            if (meta != null) {
+                fetchedFor = requested
+                applyMetadata(meta, overwriteText)
+            }
             else if (overwriteText) snackbarHostState.showSnackbar(msgFetchFailed, withDismissAction = true)
         }
+    }
+
+    /** Qué hacer al salir del editor: volver o abrir el marcador del aviso de duplicado. */
+    fun leave() {
+        val target = pendingOpenId
+        pendingOpenId = null
+        if (target != null) actions.onOpenExisting(target) else actions.onBack()
     }
 
     fun save() {
@@ -251,7 +265,12 @@ fun BookmarkEditorScreen(
         scope.launch {
             val id = actions.onSave(draft, initialDraft)
             saving = false
-            if (id == null) urlError = msgInvalidUrl else actions.onBack()
+            if (id == null) {
+                urlError = msgInvalidUrl
+                pendingOpenId = null
+            } else {
+                leave()
+            }
         }
     }
 
@@ -262,7 +281,20 @@ fun BookmarkEditorScreen(
         val normalized = UrlUtils.normalize(url) ?: return@LaunchedEffect
         delay(if (url == defaults.url) 0 else 700)
         duplicate = actions.findDuplicate(normalized, existing?.id)
-        if (autoFetch && isNew && fetchedFor != url) fetch(overwriteText = false)
+        // La imagen y el icono mostrados son de otra dirección: se quitan (o se recuperan los
+        // guardados si se vuelve a la dirección original) y se piden los de la nueva.
+        if (fetchedFor?.let(UrlUtils::normalize) != normalized) {
+            if (existing != null && url == existing.url) {
+                imageUrl = existing.imageUrl
+                faviconUrl = existing.faviconUrl
+                fetchedFor = url
+            } else {
+                imageUrl = null
+                faviconUrl = null
+                fetchedFor = null
+                if (autoFetch) fetch(overwriteText = false)
+            }
+        }
     }
 
     BackHandler(enabled = hasChanges && !isTrashed) { showDiscard = true }
@@ -423,7 +455,14 @@ fun BookmarkEditorScreen(
                                     .weight(1f)
                                     .padding(vertical = 8.dp)
                             )
-                            TextButton(onClick = { actions.onOpenExisting(dup.id) }) { Text(stringResource(R.string.view)) }
+                            TextButton(onClick = {
+                                if (hasChanges && !isTrashed) {
+                                    pendingOpenId = dup.id
+                                    showDiscard = true
+                                } else {
+                                    actions.onOpenExisting(dup.id)
+                                }
+                            }) { Text(stringResource(R.string.view)) }
                         }
                     }
                 }
@@ -590,7 +629,10 @@ fun BookmarkEditorScreen(
 
     if (showDiscard) {
         AlertDialog(
-            onDismissRequest = { showDiscard = false },
+            onDismissRequest = {
+                showDiscard = false
+                pendingOpenId = null
+            },
             title = { Text(stringResource(R.string.unsaved_title), fontWeight = FontWeight.Bold) },
             text = { Text(stringResource(R.string.unsaved_message)) },
             confirmButton = {
@@ -602,7 +644,7 @@ fun BookmarkEditorScreen(
             dismissButton = {
                 TextButton(onClick = {
                     showDiscard = false
-                    actions.onBack()
+                    leave()
                 }) { Text(stringResource(R.string.discard), color = MaterialTheme.colorScheme.error) }
             },
             shape = RoundedCornerShape(20.dp)

@@ -198,20 +198,23 @@ class BackupManager(context: Context) {
 
     private suspend fun storeInTransaction(root: ImportedFolder): ImportResult {
         val existingFolders = folderDao.getAll().filter { !it.isDeleted }.toMutableList()
-        val known = bookmarkDao.getAll().filter { it.syncStatus != SyncStatus.PENDING_DELETE }
-            .mapTo(HashSet()) { UrlUtils.canonical(it.url) }
+        val all = bookmarkDao.getAll().filter { it.syncStatus != SyncStatus.PENDING_DELETE }
+        val known = all.filter { !it.isDeleted }.mapTo(HashSet()) { UrlUtils.canonical(it.url) }
+        // Marcadores en la papelera que la copia trae de vuelta: se restauran en lugar de omitirse.
+        val trashed = all.filter { it.isDeleted }.associateBy { UrlUtils.canonical(it.url) }
         var added = 0
         var duplicates = 0
         var folders = 0
         val now = System.currentTimeMillis()
 
-        suspend fun folderFor(name: String, parentId: String?): String {
+        suspend fun folderFor(name: String, color: String?, parentId: String?): String {
             existingFolders.firstOrNull { it.parentId == parentId && it.name.equals(name, ignoreCase = true) }
                 ?.let { return it.id }
             val folder = FolderEntity(
                 id = UUID.randomUUID().toString(),
                 parentId = parentId,
                 name = name.take(120),
+                color = LabelColor.fromKey(color).key,
                 syncStatus = SyncStatus.PENDING_UPLOAD
             )
             folderDao.upsertFolder(folder)
@@ -222,8 +225,16 @@ class BackupManager(context: Context) {
 
         suspend fun walk(folder: ImportedFolder, folderId: String?) {
             for (b in folder.bookmarks) {
-                if (!known.add(UrlUtils.canonical(b.url))) {
+                val key = UrlUtils.canonical(b.url)
+                if (!known.add(key)) {
                     duplicates++
+                    continue
+                }
+                val inTrash = trashed[key]
+                if (inTrash != null) {
+                    bookmarkDao.restoreFromTrash(inTrash.id)
+                    if (folderId != null && inTrash.folderId == null) bookmarkDao.moveToFolder(listOf(inTrash.id), folderId)
+                    added++
                     continue
                 }
                 val created = b.addedAt ?: now
@@ -238,6 +249,8 @@ class BackupManager(context: Context) {
                         color = LabelColor.fromKey(b.color).key,
                         isFavorite = b.isFavorite,
                         isReadLater = b.isReadLater,
+                        imageUrl = b.imageUrl,
+                        faviconUrl = b.faviconUrl,
                         createdAt = created,
                         updatedAt = maxOf(b.modifiedAt ?: created, created),
                         syncStatus = SyncStatus.PENDING_UPLOAD
@@ -248,7 +261,7 @@ class BackupManager(context: Context) {
             for (child in folder.folders) {
                 // Las carpetas vacías (sin marcadores dentro, a ninguna profundidad) no se crean.
                 if (child.countBookmarks() == 0) continue
-                walk(child, folderFor(child.name, folderId))
+                walk(child, folderFor(child.name, child.color, folderId))
             }
         }
 

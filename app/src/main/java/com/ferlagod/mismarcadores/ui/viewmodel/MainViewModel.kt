@@ -680,8 +680,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** El usuario dice que un enlace marcado como roto sí funciona. */
     fun markLinkOk(ids: Collection<String>) {
         viewModelScope.launch {
+            // El estado del enlace es solo local: no hace falta sincronizar.
             ids.forEach { bookmarkDao.setLinkStatus(it, LinkStatus.OK) }
-            triggerSync()
         }
     }
 

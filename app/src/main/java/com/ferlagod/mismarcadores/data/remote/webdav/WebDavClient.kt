@@ -5,6 +5,7 @@
 package com.ferlagod.mismarcadores.data.remote.webdav
 
 import android.util.Xml
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
@@ -13,6 +14,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import org.json.JSONObject
 import org.xmlpull.v1.XmlPullParser
 import java.io.StringReader
 import java.net.URLDecoder
@@ -59,6 +61,45 @@ class WebDavClient(
                 .writeTimeout(60, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true)
                 .build()
+        }
+
+        /**
+         * Id interno del usuario según la API OCS de Nextcloud/ownCloud, o null si el servidor no
+         * la ofrece o falla (en ese caso se usará el nombre de usuario en la ruta WebDAV).
+         */
+        suspend fun fetchUserId(
+            serverUrl: String,
+            username: String,
+            appPassword: String,
+            okHttpClient: OkHttpClient = sharedHttpClient
+        ): String? = withContext(Dispatchers.IO) {
+            val server = serverUrl.trim().trimEnd('/')
+            val request = Request.Builder()
+                .url("$server/ocs/v2.php/cloud/user?format=json")
+                .header("Authorization", Credentials.basic(username, appPassword, Charsets.UTF_8))
+                .header("User-Agent", USER_AGENT)
+                .header("OCS-APIRequest", "true")
+                .header("Accept", "application/json")
+                .get()
+                .build()
+            try {
+                okHttpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@withContext null
+                    parseOcsUserId(response.body?.string().orEmpty())
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        /** Extrae `ocs.data.id` de la respuesta JSON de `/ocs/v2.php/cloud/user`. */
+        fun parseOcsUserId(json: String): String? = try {
+            JSONObject(json).optJSONObject("ocs")?.optJSONObject("data")?.optString("id")
+                ?.trim()?.takeIf { it.isNotEmpty() }
+        } catch (_: Exception) {
+            null
         }
 
         fun normalizeEtag(raw: String?): String? {
