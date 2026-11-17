@@ -140,7 +140,7 @@ data class NewBookmarkDefaults(
 /** Operaciones que el editor pide al ViewModel. */
 class EditorActions(
     val onBack: () -> Unit,
-    val onSave: suspend (BookmarkDraft) -> String?,
+    val onSave: suspend (draft: BookmarkDraft, original: BookmarkDraft) -> String?,
     val fetchMetadata: suspend (String) -> LinkMetadata?,
     val findDuplicate: suspend (url: String, excludeId: String?) -> BookmarkEntity?,
     val onOpenLink: (BookmarkEntity) -> Unit,
@@ -249,7 +249,7 @@ fun BookmarkEditorScreen(
         focusManager.clearFocus()
         saving = true
         scope.launch {
-            val id = actions.onSave(draft)
+            val id = actions.onSave(draft, initialDraft)
             saving = false
             if (id == null) urlError = msgInvalidUrl else actions.onBack()
         }

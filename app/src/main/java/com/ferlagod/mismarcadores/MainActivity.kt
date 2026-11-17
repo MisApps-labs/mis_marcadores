@@ -327,6 +327,8 @@ private fun AppNavigationHost(
                 tags = tagCounts,
                 counts = HomeCounts(total, favorites, readLater, unsorted, broken, trash),
                 loadPreviews = settings.loadPreviews,
+                layoutMode = settings.layoutMode,
+                sortOrder = settings.sortOrder,
                 syncState = syncState,
                 snackbarHostState = snackbarHostState,
                 actions = HomeActions(

@@ -97,6 +97,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -108,11 +109,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.ferlagod.mismarcadores.R
 import com.ferlagod.mismarcadores.data.local.entity.BookmarkEntity
 import com.ferlagod.mismarcadores.data.local.entity.FolderEntity
 import com.ferlagod.mismarcadores.data.local.model.FolderTree
 import com.ferlagod.mismarcadores.data.local.model.LinkStatus
+import com.ferlagod.mismarcadores.data.local.pref.LayoutMode
+import com.ferlagod.mismarcadores.data.local.pref.SortOrder
 import com.ferlagod.mismarcadores.data.sync.SyncState
 import com.ferlagod.mismarcadores.ui.components.ConfirmDestructiveDialog
 import com.ferlagod.mismarcadores.ui.components.FolderDialog
@@ -129,6 +134,7 @@ import com.ferlagod.mismarcadores.ui.theme.LabelColor
 import com.ferlagod.mismarcadores.ui.theme.iconTint
 import com.ferlagod.mismarcadores.ui.viewmodel.BookmarkFilter
 import com.ferlagod.mismarcadores.ui.viewmodel.TagCount
+import com.ferlagod.mismarcadores.ui.viewmodel.comparator
 import com.ferlagod.mismarcadores.util.UrlUtils
 
 /** Recuentos de las vistas rápidas de la pantalla de inicio. */
@@ -167,6 +173,8 @@ fun HomeScreen(
     tags: List<TagCount>,
     counts: HomeCounts,
     loadPreviews: Boolean,
+    layoutMode: LayoutMode,
+    sortOrder: SortOrder,
     syncState: SyncState,
     snackbarHostState: SnackbarHostState,
     actions: HomeActions
@@ -188,8 +196,8 @@ fun HomeScreen(
     var query by rememberSaveable { mutableStateOf("") }
     var expandedFolderIds by rememberSaveable { mutableStateOf(setOf<String>()) }
 
-    val treeItems = remember(folders, bookmarks, expandedFolderIds) {
-        FolderTree.buildExpandableTree(folders, bookmarks, expandedFolderIds)
+    val treeItems = remember(folders, bookmarks, expandedFolderIds, sortOrder) {
+        FolderTree.buildExpandableTree(folders, bookmarks, expandedFolderIds, bookmarkComparator = sortOrder.comparator())
     }
 
     Scaffold(
@@ -482,6 +490,7 @@ fun HomeScreen(
                                             bookmark = item.bookmark,
                                             indentationLevel = item.level,
                                             loadPreviews = loadPreviews,
+                                            layoutMode = layoutMode,
                                             onClick = { actions.onOpenBookmark(item.bookmark) },
                                             onLongClick = {
                                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -888,34 +897,82 @@ private fun FolderBookmarkRow(
     bookmark: BookmarkEntity,
     indentationLevel: Int,
     loadPreviews: Boolean,
+    layoutMode: LayoutMode,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onEdit: () -> Unit
 ) {
+    val compact = layoutMode == LayoutMode.COMPACT
+    val cards = layoutMode == LayoutMode.CARDS
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(start = (16 + indentationLevel * 18).dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+            .padding(
+                start = (16 + indentationLevel * 18).dp,
+                top = if (compact) 2.dp else 8.dp,
+                bottom = if (compact) 2.dp else 8.dp,
+                end = 4.dp
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SiteIcon(url = bookmark.url, faviconUrl = bookmark.faviconUrl, loadImages = loadPreviews, size = 28.dp)
+        val imageUrl = bookmark.imageUrl
+        if (cards && loadPreviews && imageUrl != null) {
+            val context = LocalContext.current
+            Box(
+                modifier = Modifier
+                    .size(width = 84.dp, height = 48.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                SiteIcon(url = bookmark.url, faviconUrl = bookmark.faviconUrl, loadImages = loadPreviews, size = 24.dp)
+                AsyncImage(
+                    model = remember(imageUrl) { ImageRequest.Builder(context).data(imageUrl).crossfade(true).build() },
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        } else {
+            SiteIcon(
+                url = bookmark.url,
+                faviconUrl = bookmark.faviconUrl,
+                loadImages = loadPreviews,
+                size = when (layoutMode) {
+                    LayoutMode.COMPACT -> 20.dp
+                    LayoutMode.LIST -> 28.dp
+                    LayoutMode.CARDS -> 40.dp
+                }
+            )
+        }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = bookmark.displayTitle,
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
+                maxLines = if (cards) 2 else 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = UrlUtils.displayHost(bookmark.url),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (!compact) {
+                Text(
+                    text = UrlUtils.displayHost(bookmark.url),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (cards && bookmark.description.isNotBlank()) {
+                Text(
+                    text = bookmark.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
         if (bookmark.linkStatus == LinkStatus.BROKEN) {
             Spacer(modifier = Modifier.width(4.dp))

@@ -492,26 +492,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Guarda un marcador nuevo o editado. No cambia nada (ni la fecha) si no hay cambios.
      * Devuelve el id guardado, o null si la dirección no es válida.
+     *
+     * [original] son los valores que mostraba el editor al abrirse. Solo se aplican los campos
+     * que el usuario ha cambiado respecto a ellos; el resto conserva el valor actual de la base
+     * de datos, por si una sincronización lo modificó mientras el editor estaba abierto.
      */
-    suspend fun saveBookmark(draft: BookmarkDraft): String? {
+    suspend fun saveBookmark(draft: BookmarkDraft, original: BookmarkDraft? = null): String? {
         val url = cleanUrl(draft.url) ?: return null
         val id = writeMutex.withLock {
             database.withTransaction {
                 val existing = draft.id?.let { bookmarkDao.getById(it) }
                 val base = existing ?: BookmarkEntity(id = draft.id ?: UUID.randomUUID().toString(), url = url)
+                // Sin valores originales (o marcador nuevo) se aplica el borrador entero.
+                val orig = original?.takeIf { existing != null }
+                fun <T> changed(field: (BookmarkDraft) -> T) = orig == null || field(draft) != field(orig)
+                val newUrl = if (changed { it.url }) url else base.url
                 val updated = base.copy(
-                    url = url,
-                    title = draft.title.trim(),
-                    description = draft.description.trim(),
-                    notes = draft.notes.trimEnd(),
-                    tags = Tags.join(draft.tags),
-                    folderId = draft.folderId,
-                    color = draft.color.key,
-                    isFavorite = draft.isFavorite,
-                    isReadLater = draft.isReadLater,
-                    imageUrl = draft.imageUrl?.takeIf { it.isNotBlank() },
-                    faviconUrl = draft.faviconUrl?.takeIf { it.isNotBlank() },
-                    linkStatus = if (existing != null && existing.url != url) LinkStatus.UNKNOWN else base.linkStatus
+                    url = newUrl,
+                    title = if (changed { it.title }) draft.title.trim() else base.title,
+                    description = if (changed { it.description }) draft.description.trim() else base.description,
+                    notes = if (changed { it.notes }) draft.notes.trimEnd() else base.notes,
+                    tags = if (changed { it.tags }) Tags.join(draft.tags) else base.tags,
+                    folderId = if (changed { it.folderId }) draft.folderId else base.folderId,
+                    color = if (changed { it.color }) draft.color.key else base.color,
+                    isFavorite = if (changed { it.isFavorite }) draft.isFavorite else base.isFavorite,
+                    isReadLater = if (changed { it.isReadLater }) draft.isReadLater else base.isReadLater,
+                    imageUrl = if (changed { it.imageUrl }) draft.imageUrl?.takeIf { it.isNotBlank() } else base.imageUrl,
+                    faviconUrl = if (changed { it.faviconUrl }) draft.faviconUrl?.takeIf { it.isNotBlank() } else base.faviconUrl,
+                    linkStatus = if (existing != null && existing.url != newUrl) LinkStatus.UNKNOWN else base.linkStatus
                 )
                 if (existing != null && existing == updated) return@withTransaction existing.id
                 val now = System.currentTimeMillis()
