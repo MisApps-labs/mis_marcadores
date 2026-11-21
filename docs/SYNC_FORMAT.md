@@ -47,4 +47,6 @@ La versión 1 guardaba el contenido cifrado con AES-256-GCM en `payload` y los p
 - Las subidas usan `If-Match` (ETag conocido) o `If-None-Match: *` (fichero nuevo): nunca se pisa un cambio remoto que no se haya visto.
 - Si un marcador cambió a la vez en dos dispositivos, gana la versión más reciente campo a campo, las **etiquetas se unen** y, si las notas personales difieren, **se conservan las dos**.
 - Si un marcador desaparece del servidor sin lápida, pasa a la papelera y se vuelve a subir.
-- Freno de seguridad: si el servidor retiraría de golpe 5 o más marcadores visibles y son al menos la cuarta parte (o 50 o más), no se aplica y se vuelven a subir.
+- Si una carpeta sincronizada desaparece del servidor sin lápida, se elimina y sus marcadores quedan sin carpeta.
+- Freno de seguridad: si el servidor retiraría de golpe 5 o más marcadores visibles y son al menos la cuarta parte (o 50 o más), o lo mismo con las carpetas, o han desaparecido carpetas y no queda ninguna en el servidor, no se aplica nada de eso: carpetas y marcadores se conservan y se vuelven a subir.
+- Un listado WebDAV que no sea un `multistatus` con al menos una respuesta (vacío, página de error de un proxy…) detiene la sincronización sin tocar nada.
