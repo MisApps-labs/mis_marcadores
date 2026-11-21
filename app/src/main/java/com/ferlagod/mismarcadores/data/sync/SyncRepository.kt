@@ -22,10 +22,14 @@ import com.ferlagod.mismarcadores.data.remote.webdav.WebDavClient
 import com.ferlagod.mismarcadores.data.remote.webdav.WebDavException
 import com.ferlagod.mismarcadores.data.remote.webdav.WebDavPreconditionFailedException
 import com.ferlagod.mismarcadores.util.LanguageManager
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -82,6 +86,12 @@ class SyncRepository private constructor(context: Context) {
 
     private val syncMutex = Mutex()
 
+    /**
+     * Ámbito propio de la app: una sincronización pedida desde la interfaz termina aunque se
+     * cierre la pantalla (y su ViewModel) a mitad.
+     */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     @Volatile
     private var rerunRequested = false
     private var warnings = 0
@@ -125,6 +135,11 @@ class SyncRepository private constructor(context: Context) {
             )
             else -> e.localizedMessage ?: res.getString(R.string.err_unknown)
         }
+    }
+
+    /** Pide una sincronización en segundo plano, sin esperar a que termine. */
+    fun requestSync() {
+        scope.launch { synchronize() }
     }
 
     fun resetSyncState() {
@@ -178,6 +193,8 @@ class SyncRepository private constructor(context: Context) {
                     authPreferences.clearLegacyVault()
                 }
                 Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.w(TAG, "connectAccount", e)
                 Result.failure(Exception(friendlyMessage(e), e))
@@ -224,6 +241,10 @@ class SyncRepository private constructor(context: Context) {
             authPreferences.setLastSync(now)
             _syncState.value = SyncState.Success(now, warnings, protectedItems)
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            // Cancelada desde fuera (WorkManager detuvo el trabajo…): no es un error que mostrar.
+            _syncState.value = SyncState.Idle
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "synchronize", e)
             _syncState.value = SyncState.Error(friendlyMessage(e), e)

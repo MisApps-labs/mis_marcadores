@@ -337,7 +337,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun triggerSync() {
         if (!_isConfigured.value) return
-        viewModelScope.launch { syncRepository.synchronize() }
+        syncRepository.requestSync()
     }
 
     // ==========================================
