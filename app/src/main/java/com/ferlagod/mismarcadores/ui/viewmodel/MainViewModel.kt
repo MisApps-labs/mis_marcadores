@@ -40,6 +40,7 @@ import com.ferlagod.mismarcadores.data.sync.SyncState
 import com.ferlagod.mismarcadores.data.sync.SyncWorker
 import com.ferlagod.mismarcadores.ui.theme.LabelColor
 import com.ferlagod.mismarcadores.util.LanguageManager
+import com.ferlagod.mismarcadores.util.NextcloudUrl
 import com.ferlagod.mismarcadores.util.TextSearch
 import com.ferlagod.mismarcadores.util.UrlUtils
 import kotlinx.coroutines.CancellationException
@@ -299,7 +300,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         viewModelScope.launch {
-            val credentials = NextcloudCredentials(url, username.trim(), appPassword.trim())
+            // Se acepta también la URL WebDAV o la que se ve en el navegador (ver NextcloudUrl).
+            val server = NextcloudUrl.parse(url)
+            val credentials = NextcloudCredentials(server.serverUrl, username.trim(), appPassword.trim(), server.userId)
             syncRepository.connectAccount(credentials)
                 .onSuccess {
                     _isConfigured.value = true
