@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 ferlagod
-// Mis Marcadores — https://github.com/ferlagod/mis_marcadores
+// Mis Marcadores — https://github.com/MisApps-labs/mis_marcadores
 
 package com.ferlagod.mismarcadores.ui.screen
 
@@ -1008,7 +1008,7 @@ private fun AboutSection() {
     }
 }
 
-private const val REPO_URL = "https://github.com/ferlagod/mis_marcadores"
+private const val REPO_URL = "https://github.com/MisApps-labs/mis_marcadores"
 
 @Composable
 private fun SettingsTextField(

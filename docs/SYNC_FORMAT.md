@@ -1,7 +1,7 @@
 <!--
   SPDX-License-Identifier: GPL-3.0-or-later
   Copyright (C) 2026 ferlagod
-  Mis Marcadores — https://github.com/ferlagod/mis_marcadores
+  Mis Marcadores — https://github.com/MisApps-labs/mis_marcadores
 -->
 
 # Formato de sincronización

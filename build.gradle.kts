@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 ferlagod
-// Mis Marcadores — https://github.com/ferlagod/mis_marcadores
+// Mis Marcadores — https://github.com/MisApps-labs/mis_marcadores
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
