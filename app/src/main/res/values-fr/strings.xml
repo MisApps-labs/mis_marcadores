@@ -284,9 +284,9 @@
     <string name="sync_in_progress">Synchronisation…</string>
     <string name="sync_now">Synchroniser</string>
     <plurals name="sync_protected_items">
-        <item quantity="one">(%d favori conservé : le serveur voulait en retirer trop à la fois)</item>
-        <item quantity="other">(%d favoris conservés : le serveur voulait en retirer trop à la fois)</item>
-        <item quantity="many">(%d favoris conservés : le serveur voulait en retirer trop à la fois)</item>
+        <item quantity="one">(%d élément conservé : le serveur voulait en retirer trop à la fois)</item>
+        <item quantity="other">(%d éléments conservés : le serveur voulait en retirer trop à la fois)</item>
+        <item quantity="many">(%d éléments conservés : le serveur voulait en retirer trop à la fois)</item>
     </plurals>
     <string name="sync_stage_connecting">Connexion à Nextcloud…</string>
     <string name="sync_stage_downloading">Téléchargement des modifications…</string>

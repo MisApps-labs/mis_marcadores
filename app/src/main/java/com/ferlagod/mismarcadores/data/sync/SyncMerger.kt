@@ -171,6 +171,15 @@ object SyncMerger {
     fun isMassRemoval(removed: Int, live: Int): Boolean =
         removed >= MASS_REMOVAL_MIN && (removed >= MASS_REMOVAL_ABSOLUTE || removed * 4 >= live)
 
+    /**
+     * Freno para carpetas: además de la regla de [isMassRemoval], se frena siempre que hayan
+     * desaparecido carpetas y en el servidor no quede ninguna (carpeta remota vaciada o
+     * cambiada), aunque sean pocas. La app nunca borra ficheros de carpetas vivas: las borra
+     * con lápidas, así que un fichero que desaparece es siempre anómalo.
+     */
+    fun isMassFolderRemoval(removed: Int, live: Int, remoteFolderFiles: Int): Boolean =
+        removed > 0 && (isMassRemoval(removed, live) || remoteFolderFiles == 0)
+
     fun sameContent(a: BookmarkEntity, b: BookmarkEntity): Boolean =
         a.url == b.url &&
             a.title == b.title &&

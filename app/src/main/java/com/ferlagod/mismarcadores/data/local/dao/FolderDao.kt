@@ -54,6 +54,9 @@ interface FolderDao {
     @Query("DELETE FROM folders WHERE isDeleted = 1 OR syncStatus = 'PENDING_DELETE'")
     suspend fun deletePendingPurge()
 
+    @Query("SELECT COUNT(*) FROM folders WHERE isDeleted = 0 AND syncStatus != 'PENDING_DELETE'")
+    suspend fun countLive(): Int
+
     /** Como [BookmarkDao.resetSyncMetadata]: lo sincronizado pasa a pendiente de subir. */
     @Query(
         "UPDATE folders SET remoteEtag = NULL, " +

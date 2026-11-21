@@ -274,8 +274,8 @@
     <string name="sync_in_progress">Syncing…</string>
     <string name="sync_now">Sync</string>
     <plurals name="sync_protected_items">
-        <item quantity="one">(%d bookmark kept: the server wanted to remove too many at once)</item>
-        <item quantity="other">(%d bookmarks kept: the server wanted to remove too many at once)</item>
+        <item quantity="one">(%d item kept: the server wanted to remove too many at once)</item>
+        <item quantity="other">(%d items kept: the server wanted to remove too many at once)</item>
     </plurals>
     <string name="sync_stage_connecting">Connecting to Nextcloud…</string>
     <string name="sync_stage_downloading">Downloading changes…</string>

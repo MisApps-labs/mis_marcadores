@@ -272,8 +272,8 @@
     <string name="sync_in_progress">Synchronisiere…</string>
     <string name="sync_now">Synchronisieren</string>
     <plurals name="sync_protected_items">
-        <item quantity="one">(%d Lesezeichen behalten: Der Server wollte zu viele auf einmal entfernen)</item>
-        <item quantity="other">(%d Lesezeichen behalten: Der Server wollte zu viele auf einmal entfernen)</item>
+        <item quantity="one">(%d Element behalten: Der Server wollte zu viele auf einmal entfernen)</item>
+        <item quantity="other">(%d Elemente behalten: Der Server wollte zu viele auf einmal entfernen)</item>
     </plurals>
     <string name="sync_stage_connecting">Verbinde mit Nextcloud…</string>
     <string name="sync_stage_downloading">Lade Änderungen herunter…</string>

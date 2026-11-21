@@ -45,7 +45,7 @@ sealed interface SyncState {
     data class Syncing(val stage: SyncStage = SyncStage.CONNECTING) : SyncState
     /**
      * @param warnings ficheros remotos que no se pudieron leer.
-     * @param protectedItems marcadores que el servidor quería retirar en bloque y se han conservado
+     * @param protectedItems carpetas y marcadores que el servidor quería retirar en bloque y se han conservado
      *   (ver [SyncMerger.isMassRemoval]).
      */
     data class Success(
@@ -238,8 +238,9 @@ class SyncRepository private constructor(context: Context) {
         val remote = client.listRemoteFiles().associateBy { it.name }
 
         _syncState.value = SyncState.Syncing(SyncStage.DOWNLOADING)
-        pullFolders(client, remote)
-        pullBookmarks(client, remote)
+        val folderRemovals = pullFolders(client, remote)
+        val bookmarkRemovals = pullBookmarks(client, remote)
+        applyRemovals(folderRemovals, bookmarkRemovals, remoteFolderFiles = idsWithPrefix(remote, FOLDER_PREFIX).size)
 
         _syncState.value = SyncState.Syncing(SyncStage.UPLOADING)
         pushFolders(client, remote)
@@ -256,7 +257,12 @@ class SyncRepository private constructor(context: Context) {
         remote.values.filter { it.name.startsWith(prefix) && it.name.endsWith(JSON_EXT) }
             .associateBy { it.name.removePrefix(prefix).removeSuffix(JSON_EXT) }
 
-    private suspend fun pullFolders(client: WebDavClient, remote: Map<String, RemoteFileMeta>) {
+    /**
+     * Descarga las carpetas. Devuelve las carpetas sincronizadas que han desaparecido del servidor
+     * sin lápida: no se borran aquí, sino en [applyRemovals], que antes comprueba que no sea un
+     * vaciado en bloque de la carpeta remota.
+     */
+    private suspend fun pullFolders(client: WebDavClient, remote: Map<String, RemoteFileMeta>): List<String> {
         val remoteFolders = idsWithPrefix(remote, FOLDER_PREFIX)
         val knownTombstones = tombstoneDao.getAll().associate { it.fileName to it.etag }
 
@@ -282,15 +288,19 @@ class SyncRepository private constructor(context: Context) {
             }
         }
 
+        val missing = mutableListOf<String>()
         for (local in folderDao.getAll()) {
             if (local.id in remoteFolders) continue
             when (SyncMerger.resolveMissingRemote(local.syncStatus, local.remoteEtag)) {
-                MissingRemoteAction.DELETE_LOCAL -> database.withTransaction { deleteFolderAndDetachInTx(local.id) }
+                MissingRemoteAction.DELETE_LOCAL ->
+                    if (local.syncStatus == SyncStatus.PENDING_DELETE) database.withTransaction { deleteFolderAndDetachInTx(local.id) }
+                    else missing += local.id
                 MissingRemoteAction.MARK_FOR_UPLOAD -> folderDao.updateSyncStatus(local.id, SyncStatus.PENDING_UPLOAD)
                 MissingRemoteAction.FORGET_ETAG -> folderDao.setRemoteEtag(local.id, null)
                 MissingRemoteAction.NOTHING, MissingRemoteAction.TRASH_AND_REUPLOAD -> Unit
             }
         }
+        return missing
     }
 
     private suspend fun deleteFolderAndDetachInTx(id: String) {
@@ -300,7 +310,8 @@ class SyncRepository private constructor(context: Context) {
         folderDao.deletePermanently(id)
     }
 
-    private suspend fun pullBookmarks(client: WebDavClient, remote: Map<String, RemoteFileMeta>) {
+    /** Descarga los marcadores. Las retiradas de marcadores visibles se devuelven para [applyRemovals]. */
+    private suspend fun pullBookmarks(client: WebDavClient, remote: Map<String, RemoteFileMeta>): List<PendingRemoval> {
         val remoteBookmarks = idsWithPrefix(remote, BOOKMARK_PREFIX)
         val knownTombstones = tombstoneDao.getAll().associate { it.fileName to it.etag }
 
@@ -342,12 +353,30 @@ class SyncRepository private constructor(context: Context) {
             }
         }
 
-        if (pendingRemovals.isEmpty()) return
+        return pendingRemovals
+    }
 
-        if (SyncMerger.isMassRemoval(pendingRemovals.size, bookmarkDao.countLive())) {
-            Log.w(TAG, "El servidor retiraría ${pendingRemovals.size} marcadores a la vez; se conservan y se vuelven a subir")
+    /**
+     * Aplica las retiradas que pidió el servidor (carpetas desaparecidas y marcadores visibles
+     * borrados o desaparecidos), salvo que sean un borrado en bloque: entonces se conservan y se
+     * vuelven a subir, tanto las carpetas como los marcadores (ver [SyncMerger.isMassRemoval]).
+     */
+    private suspend fun applyRemovals(folderIds: List<String>, removals: List<PendingRemoval>, remoteFolderFiles: Int) {
+        if (folderIds.isEmpty() && removals.isEmpty()) return
+
+        val brake = SyncMerger.isMassRemoval(removals.size, bookmarkDao.countLive()) ||
+            SyncMerger.isMassFolderRemoval(folderIds.size, folderDao.countLive(), remoteFolderFiles)
+
+        if (brake) {
+            Log.w(TAG, "El servidor retiraría ${folderIds.size} carpetas y ${removals.size} marcadores a la vez; se conservan y se vuelven a subir")
             database.withTransaction {
-                for (removal in pendingRemovals) {
+                for (id in folderIds) {
+                    val current = folderDao.getFolderById(id) ?: continue
+                    if (current.syncStatus == SyncStatus.PENDING_DELETE) continue
+                    folderDao.setRemoteEtag(id, null)
+                    folderDao.updateSyncStatus(id, SyncStatus.PENDING_UPLOAD)
+                }
+                for (removal in removals) {
                     val current = bookmarkDao.getById(removal.id) ?: continue
                     if (current.syncStatus == SyncStatus.PENDING_DELETE) continue
                     val etag = (removal as? PendingRemoval.Tombstone)?.etag
@@ -355,13 +384,22 @@ class SyncRepository private constructor(context: Context) {
                     bookmarkDao.updateSyncStatus(removal.id, SyncStatus.PENDING_UPLOAD)
                 }
             }
-            protectedItems += pendingRemovals.size
+            protectedItems += folderIds.size + removals.size
             return
         }
 
-        for (removal in pendingRemovals) {
+        for (id in folderIds) {
             database.withTransaction {
                 // Se vuelve a decidir con el estado actual: pudo editarse durante la descarga.
+                val current = folderDao.getFolderById(id) ?: return@withTransaction
+                if (SyncMerger.resolveMissingRemote(current.syncStatus, current.remoteEtag) == MissingRemoteAction.DELETE_LOCAL) {
+                    deleteFolderAndDetachInTx(id)
+                }
+            }
+        }
+
+        for (removal in removals) {
+            database.withTransaction {
                 val current = bookmarkDao.getById(removal.id) ?: return@withTransaction
                 when (removal) {
                     is PendingRemoval.Tombstone ->

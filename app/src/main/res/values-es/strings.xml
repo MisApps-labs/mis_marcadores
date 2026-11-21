@@ -284,9 +284,9 @@
     <string name="sync_in_progress">Sincronizando…</string>
     <string name="sync_now">Sincronizar</string>
     <plurals name="sync_protected_items">
-        <item quantity="one">(se ha conservado %d marcador: el servidor quería retirar demasiados a la vez)</item>
-        <item quantity="other">(se han conservado %d marcadores: el servidor quería retirar demasiados a la vez)</item>
-        <item quantity="many">(se han conservado %d marcadores: el servidor quería retirar demasiados a la vez)</item>
+        <item quantity="one">(se ha conservado %d elemento: el servidor quería retirar demasiados a la vez)</item>
+        <item quantity="other">(se han conservado %d elementos: el servidor quería retirar demasiados a la vez)</item>
+        <item quantity="many">(se han conservado %d elementos: el servidor quería retirar demasiados a la vez)</item>
     </plurals>
     <string name="sync_stage_connecting">Conectando con Nextcloud…</string>
     <string name="sync_stage_downloading">Descargando cambios…</string>

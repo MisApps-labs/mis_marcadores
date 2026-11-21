@@ -74,6 +74,17 @@ class SyncMergerTest {
     }
 
     @Test
+    fun folderRemovalBrake() {
+        assertFalse(SyncMerger.isMassFolderRemoval(0, 3, 0))
+        // Desaparecen todas las carpetas del servidor: se frena aunque sean pocas.
+        assertTrue(SyncMerger.isMassFolderRemoval(2, 2, 0))
+        // Una carpeta suelta desaparecida con el resto aún en el servidor: se aplica.
+        assertFalse(SyncMerger.isMassFolderRemoval(1, 30, 29))
+        // Muchas a la vez: se frena.
+        assertTrue(SyncMerger.isMassFolderRemoval(10, 30, 20))
+    }
+
+    @Test
     fun massRemovalBrake() {
         assertFalse(SyncMerger.isMassRemoval(4, 4))
         assertTrue(SyncMerger.isMassRemoval(5, 20))
