@@ -102,6 +102,13 @@ class WebDavClient(
             null
         }
 
+        /** ¿Es [body] una respuesta WebDAV multistatus (`<d:multistatus>` con algún `<d:response>`)? */
+        fun isMultistatus(body: String): Boolean {
+            val xml = body.lowercase()
+            return Regex("<([a-z0-9_-]+:)?multistatus[\\s>]").containsMatchIn(xml) &&
+                Regex("<([a-z0-9_-]+:)?response[\\s/>]").containsMatchIn(xml)
+        }
+
         fun normalizeEtag(raw: String?): String? {
             if (raw.isNullOrBlank()) return null
             return raw.trim().removePrefix("W/").trim('"').takeIf { it.isNotBlank() }
@@ -238,7 +245,13 @@ class WebDavClient(
             response.body?.string().orEmpty()
         }
 
-        if (xmlBody.isBlank()) emptyList() else parsePropfindResponse(xmlBody)
+        // Un listado correcto siempre es un multistatus que incluye al menos la propia carpeta.
+        // Si llega vacío o es otra cosa (página de error de un proxy…), no se puede interpretar
+        // como "no hay ficheros": la sincronización borraría o retiraría todo lo local.
+        if (!isMultistatus(xmlBody)) {
+            throw WebDavException(0, "Respuesta inesperada al listar ficheros en Nextcloud", WebDavException.Reason.INVALID_RESPONSE)
+        }
+        parsePropfindResponse(xmlBody)
     }
 
     private fun fileUrl(fileName: String): String = rootUrl + fileName.removePrefix("/")

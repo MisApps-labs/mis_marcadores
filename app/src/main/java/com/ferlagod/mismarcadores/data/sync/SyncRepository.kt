@@ -114,9 +114,11 @@ class SyncRepository private constructor(context: Context) {
             is UnknownHostException -> res.getString(R.string.err_unknown_host)
             is SocketTimeoutException -> res.getString(R.string.err_timeout)
             is SSLException -> res.getString(R.string.err_ssl)
-            is WebDavException ->
-                if (e.reason == WebDavException.Reason.PATH_NOT_FOUND) res.getString(R.string.err_path_not_found)
-                else res.getString(R.string.err_server, e.code)
+            is WebDavException -> when (e.reason) {
+                WebDavException.Reason.PATH_NOT_FOUND -> res.getString(R.string.err_path_not_found)
+                WebDavException.Reason.INVALID_RESPONSE -> res.getString(R.string.err_invalid_response)
+                WebDavException.Reason.HTTP -> res.getString(R.string.err_server, e.code)
+            }
             is java.io.IOException -> res.getString(
                 R.string.err_network,
                 e.localizedMessage ?: res.getString(R.string.err_no_connection)

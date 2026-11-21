@@ -113,6 +113,7 @@
     <string name="err_network">Netzwerkfehler: %1$s</string>
     <string name="err_no_connection">keine Verbindung</string>
     <string name="err_path_not_found">Der WebDAV-Pfad existiert nicht. Prüfe Server-URL und Benutzername.</string>
+    <string name="err_invalid_response">Der Server hat eine unerwartete Antwort gesendet. Es wurde nichts geändert; versuche es später erneut.</string>
     <string name="err_server">Serverfehler (%1$d)</string>
     <string name="err_ssl">Das SSL/TLS-Zertifikat des Servers ist ungültig</string>
     <string name="err_timeout">Der Server hat zu lange gebraucht</string>

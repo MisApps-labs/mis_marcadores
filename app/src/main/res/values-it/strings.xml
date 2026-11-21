@@ -115,6 +115,7 @@
     <string name="err_network">Errore di rete: %1$s</string>
     <string name="err_no_connection">nessuna connessione</string>
     <string name="err_path_not_found">Il percorso WebDAV non esiste. Controlla l’URL del server e il nome utente.</string>
+    <string name="err_invalid_response">Il server ha inviato una risposta inattesa. Non è stato modificato nulla; riprova più tardi.</string>
     <string name="err_server">Errore del server (%1$d)</string>
     <string name="err_ssl">Il certificato SSL/TLS del server non è valido</string>
     <string name="err_timeout">Il server ha impiegato troppo tempo a rispondere</string>

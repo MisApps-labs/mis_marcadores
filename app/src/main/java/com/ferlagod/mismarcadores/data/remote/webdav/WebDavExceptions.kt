@@ -8,7 +8,12 @@ import java.io.IOException
 
 /** Error HTTP devuelto por el servidor WebDAV. */
 open class WebDavException(val code: Int, message: String, val reason: Reason = Reason.HTTP) : IOException(message) {
-    enum class Reason { HTTP, PATH_NOT_FOUND }
+    enum class Reason {
+        HTTP,
+        PATH_NOT_FOUND,
+        /** El servidor respondió bien pero con algo que no es un listado WebDAV. */
+        INVALID_RESPONSE
+    }
 }
 
 /** 401/403: usuario o contraseña de aplicación incorrectos. */
