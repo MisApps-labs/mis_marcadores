@@ -92,8 +92,13 @@ class SyncRepository private constructor(context: Context) {
      */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    /** El servidor rechazó una subida (412): hay que fusionar en otra ronda. */
     @Volatile
     private var rerunRequested = false
+
+    /** Alguien pidió sincronizar mientras otra operación tenía el cerrojo. */
+    @Volatile
+    private var pendingRequest = false
     private var warnings = 0
     private var protectedItems = 0
 
@@ -192,6 +197,7 @@ class SyncRepository private constructor(context: Context) {
                     authPreferences.saveCredentials(resolved)
                     authPreferences.clearLegacyVault()
                 }
+                servePendingRequest()
                 Result.success(Unit)
             } catch (e: CancellationException) {
                 throw e
@@ -212,10 +218,7 @@ class SyncRepository private constructor(context: Context) {
             return@withContext Result.success(Unit)
         }
 
-        if (!syncMutex.tryLock()) {
-            rerunRequested = true
-            return@withContext Result.success(Unit)
-        }
+        if (!tryAcquire()) return@withContext Result.success(Unit)
 
         try {
             if (authPreferences.hasLegacyVault()) {
@@ -233,9 +236,10 @@ class SyncRepository private constructor(context: Context) {
             var rounds = 0
             do {
                 rerunRequested = false
+                pendingRequest = false
                 runRound(client)
                 rounds++
-            } while (rerunRequested && rounds < MAX_ROUNDS)
+            } while ((rerunRequested || pendingRequest) && rounds < MAX_ROUNDS)
 
             val now = System.currentTimeMillis()
             authPreferences.setLastSync(now)
@@ -251,7 +255,24 @@ class SyncRepository private constructor(context: Context) {
             Result.failure(e)
         } finally {
             syncMutex.unlock()
+            servePendingRequest()
         }
+    }
+
+    /**
+     * Toma el cerrojo de sincronización. Si está ocupado, deja apuntada la petición para que la
+     * atienda quien lo tiene (en otra ronda o al soltarlo) y devuelve false.
+     */
+    private fun tryAcquire(): Boolean {
+        if (syncMutex.tryLock()) return true
+        pendingRequest = true
+        // Quien tenía el cerrojo pudo soltarlo justo ahora, sin llegar a ver la petición.
+        return syncMutex.tryLock()
+    }
+
+    /** Tras soltar el cerrojo: si llegó una petición mientras estaba ocupado, se atiende ahora. */
+    private fun servePendingRequest() {
+        if (pendingRequest) requestSync()
     }
 
     private suspend fun runRound(client: WebDavClient) {
