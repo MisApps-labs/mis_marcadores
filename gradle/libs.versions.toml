@@ -3,24 +3,24 @@
 # Mis Marcadores — https://github.com/ferlagod/mis_marcadores
 
 [versions]
-agp = "9.5.1"
+agp = "9.5.2"
 coreKtx = "1.19.1"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
-lifecycleRuntimeKtx = "2.11.0"
+lifecycleRuntimeKtx = "2.11.1"
 activityCompose = "1.13.0"
-kotlin = "2.2.10"
+kotlin = "2.4.21"
 composeBom = "2026.02.01"
 room = "2.8.5"
-navigationCompose = "2.8.8"
+navigationCompose = "2.10.2"
 okhttp = "4.12.0"
 coil = "2.7.0"
-ksp = "2.2.10-2.0.2"
+ksp = "2.3.13"
 securityCrypto = "1.1.0"
 work = "2.12.0"
-orgJson = "20240303"
-browser = "1.8.0"
+orgJson = "20260814"
+browser = "1.10.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
