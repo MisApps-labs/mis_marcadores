@@ -85,6 +85,16 @@ class SyncMergerTest {
     }
 
     @Test
+    fun tombstonesExpireAfterRetention() {
+        val day = 24L * 60 * 60 * 1000
+        val now = 1_000 * day
+        assertFalse(SyncMerger.isExpiredTombstone(now - 10 * day, now))
+        assertTrue(SyncMerger.isExpiredTombstone(now - (SyncMerger.TOMBSTONE_RETENTION_DAYS + 1) * day, now))
+        // Sin fecha conocida no se borra nunca.
+        assertFalse(SyncMerger.isExpiredTombstone(0L, now))
+    }
+
+    @Test
     fun massRemovalBrake() {
         assertFalse(SyncMerger.isMassRemoval(4, 4))
         assertTrue(SyncMerger.isMassRemoval(5, 20))

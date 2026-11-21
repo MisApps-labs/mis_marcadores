@@ -207,11 +207,18 @@ class WebDavClient(
 
     suspend fun downloadText(fileName: String): String = String(download(fileName), Charsets.UTF_8)
 
-    /** Borrado idempotente (404 se considera éxito). */
-    suspend fun delete(fileName: String): Unit = withContext(Dispatchers.IO) {
-        val request = baseRequest(fileUrl(fileName)).delete().build()
-        okHttpClient.newCall(request).execute().use { response ->
+    /**
+     * Borrado idempotente (404 se considera éxito).
+     *
+     * @param ifMatch si no es null, solo se borra si el ETag remoto coincide.
+     * @throws WebDavPreconditionFailedException si el fichero cambió (412).
+     */
+    suspend fun delete(fileName: String, ifMatch: String? = null): Unit = withContext(Dispatchers.IO) {
+        val builder = baseRequest(fileUrl(fileName)).delete()
+        if (ifMatch != null) builder.header("If-Match", "\"$ifMatch\"")
+        okHttpClient.newCall(builder.build()).execute().use { response ->
             response.throwIfAuthError()
+            if (response.code == 412) throw WebDavPreconditionFailedException(fileName)
             if (response.isSuccessful || response.code == 404) return@withContext
             throw WebDavException(response.code, "Error al eliminar $fileName (${response.code})")
         }

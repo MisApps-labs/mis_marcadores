@@ -38,6 +38,8 @@ Un borrado definitivo sustituye el contenido del fichero por una lápida:
 { "format": "mismarcadores", "version": 2, "type": "bookmark", "id": "<uuid>", "deleted": true, "deletedAt": 0 }
 ```
 
+Las lápidas con más de 180 días (según su fecha de modificación en el servidor) las borra el primer dispositivo que las haya procesado. Si un dispositivo pasa más tiempo sin sincronizar y aún tenía ese marcador, lo verá desaparecer sin lápida y lo llevará a su papelera.
+
 ## Versión 1 (cifrada, retirada)
 
 La versión 1 guardaba el contenido cifrado con AES-256-GCM en `payload` y los parámetros de la clave en `keyinfo.json`. La app actual no los lee: si un dispositivo tiene ese marcador o carpeta, lo vuelve a subir en claro encima; si no, el fichero se ignora (cuenta como aviso). `keyinfo.json` se ignora y puede borrarse.

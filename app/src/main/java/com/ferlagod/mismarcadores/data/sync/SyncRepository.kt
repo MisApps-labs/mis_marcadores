@@ -289,6 +289,7 @@ class SyncRepository private constructor(context: Context) {
         _syncState.value = SyncState.Syncing(SyncStage.UPLOADING)
         pushFolders(client, remote)
         pushBookmarks(client, remote)
+        pruneOldTombstones(client, remote)
 
         tombstoneDao.getAll().filter { it.fileName !in remote }.forEach { tombstoneDao.delete(it.fileName) }
     }
@@ -562,6 +563,30 @@ class SyncRepository private constructor(context: Context) {
                 ?: continue
             tombstoneDao.upsert(RemoteTombstoneEntity(name, etag.value))
             bookmarkDao.deletePermanently(bookmark.id)
+        }
+    }
+
+    /**
+     * Borra del servidor las lápidas que este dispositivo ya ha procesado y que tienen más de
+     * [SyncMerger.TOMBSTONE_RETENTION_DAYS] días, para que la carpeta no crezca sin fin. Un
+     * dispositivo que no sincronice en todo ese tiempo verá desaparecer el fichero: si tenía el
+     * marcador, irá a su papelera (ver [SyncMerger.resolveMissingRemoteBookmark]).
+     */
+    private suspend fun pruneOldTombstones(client: WebDavClient, remote: Map<String, RemoteFileMeta>) {
+        val now = System.currentTimeMillis()
+        for (tombstone in tombstoneDao.getAll()) {
+            val etag = tombstone.etag ?: continue
+            val meta = remote[tombstone.fileName] ?: continue
+            if (meta.etag != etag || !SyncMerger.isExpiredTombstone(meta.lastModified, now)) continue
+            try {
+                client.delete(tombstone.fileName, ifMatch = etag)
+                tombstoneDao.delete(tombstone.fileName)
+            } catch (_: WebDavPreconditionFailedException) {
+                // Cambió en el servidor (otro dispositivo lo resucitó): se leerá en la próxima ronda.
+            } catch (e: WebDavException) {
+                // Limpiar es opcional: un fallo aquí no debe detener la sincronización.
+                Log.w(TAG, "No se pudo borrar la lápida ${tombstone.fileName}", e)
+            }
         }
     }
 

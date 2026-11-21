@@ -180,6 +180,18 @@ object SyncMerger {
     fun isMassFolderRemoval(removed: Int, live: Int, remoteFolderFiles: Int): Boolean =
         removed > 0 && (isMassRemoval(removed, live) || remoteFolderFiles == 0)
 
+    /** Tiempo que se conservan las lápidas en el servidor antes de borrarlas. */
+    const val TOMBSTONE_RETENTION_DAYS = 180
+    private const val TOMBSTONE_RETENTION_MS = TOMBSTONE_RETENTION_DAYS * 24L * 60 * 60 * 1000
+
+    /**
+     * ¿Se puede borrar del servidor una lápida modificada por última vez en [lastModified]?
+     * Las lápidas no se vuelven a escribir, así que esa fecha es la del borrado. Sin fecha
+     * conocida (0) nunca se borra.
+     */
+    fun isExpiredTombstone(lastModified: Long, now: Long): Boolean =
+        lastModified > 0 && now - lastModified > TOMBSTONE_RETENTION_MS
+
     fun sameContent(a: BookmarkEntity, b: BookmarkEntity): Boolean =
         a.url == b.url &&
             a.title == b.title &&
