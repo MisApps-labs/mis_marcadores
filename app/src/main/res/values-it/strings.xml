@@ -35,7 +35,11 @@
     <string name="auto_fetch">Recupera i dati della pagina</string>
     <string name="auto_fetch_desc">Quando salvi un nuovo link, recupera titolo, descrizione e immagine dal sito</string>
     <string name="auto_purge_trash">Svuota il cestino automaticamente</string>
-    <string name="auto_purge_trash_desc">Elimina i segnalibri che sono nel cestino da più di %1$d giorni</string>
+    <plurals name="auto_purge_trash_desc">
+        <item quantity="one">Elimina i segnalibri che sono nel cestino da più di %1$d giorno</item>
+        <item quantity="other">Elimina i segnalibri che sono nel cestino da più di %1$d giorni</item>
+        <item quantity="many">Elimina i segnalibri che sono nel cestino da più di %1$d giorni</item>
+    </plurals>
     <string name="backup_desc">Esporta tutti i tuoi segnalibri (con cartelle, tag e note) in un file HTML che qualsiasi browser può importare, oppure importa i segnalibri di Chrome, Firefox, Safari, Edge… Sono supportati anche file di testo con link.</string>
     <string name="backup_failed">Operazione non riuscita: %1$s</string>
     <string name="backup_in_progress">Elaborazione…</string>
@@ -312,7 +316,11 @@
     <string name="title_hint">Titolo</string>
     <string name="trash">Cestino</string>
     <string name="trash_banner">I segnalibri nel cestino restano finché non lo svuoti.</string>
-    <string name="trash_banner_auto">I segnalibri vengono eliminati dopo %1$d giorni nel cestino.</string>
+    <plurals name="trash_banner_auto">
+        <item quantity="one">I segnalibri vengono eliminati dopo %1$d giorno nel cestino.</item>
+        <item quantity="other">I segnalibri vengono eliminati dopo %1$d giorni nel cestino.</item>
+        <item quantity="many">I segnalibri vengono eliminati dopo %1$d giorni nel cestino.</item>
+    </plurals>
     <string name="undo">Annulla</string>
     <string name="unlock">Sblocca</string>
     <string name="unsaved_message">Hai modifiche non salvate.</string>

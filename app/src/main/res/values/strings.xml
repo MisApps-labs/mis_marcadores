@@ -36,7 +36,10 @@
     <string name="auto_fetch">Fetch page details</string>
     <string name="auto_fetch_desc">When saving a new link, get its title, description and image from the website</string>
     <string name="auto_purge_trash">Empty trash automatically</string>
-    <string name="auto_purge_trash_desc">Delete bookmarks that have been in the trash for more than %1$d days</string>
+    <plurals name="auto_purge_trash_desc">
+        <item quantity="one">Delete bookmarks that have been in the trash for more than %1$d day</item>
+        <item quantity="other">Delete bookmarks that have been in the trash for more than %1$d days</item>
+    </plurals>
     <string name="backup_desc">Export all your bookmarks (with folders, tags and notes) as an HTML file that any browser can import, or import the bookmarks of Chrome, Firefox, Safari, Edge… Text files with links are also supported.</string>
     <string name="backup_failed">Operation failed: %1$s</string>
     <string name="backup_in_progress">Working…</string>
@@ -300,7 +303,10 @@
     <string name="title_hint">Title</string>
     <string name="trash">Trash</string>
     <string name="trash_banner">Bookmarks in the trash are kept until you empty it.</string>
-    <string name="trash_banner_auto">Bookmarks are deleted after %1$d days in the trash.</string>
+    <plurals name="trash_banner_auto">
+        <item quantity="one">Bookmarks are deleted after %1$d day in the trash.</item>
+        <item quantity="other">Bookmarks are deleted after %1$d days in the trash.</item>
+    </plurals>
     <string name="undo">Undo</string>
     <string name="unlock">Unlock</string>
     <string name="unsaved_message">You have changes that haven’t been saved.</string>

@@ -399,7 +399,7 @@ fun SettingsScreen(
                 SwitchRow(
                     icon = Icons.Rounded.AutoDelete,
                     title = stringResource(R.string.auto_purge_trash),
-                    subtitle = stringResource(R.string.auto_purge_trash_desc, AppSettings.TRASH_RETENTION_DAYS),
+                    subtitle = pluralStringResource(R.plurals.auto_purge_trash_desc, AppSettings.TRASH_RETENTION_DAYS, AppSettings.TRASH_RETENTION_DAYS),
                     checked = settings.autoPurgeTrash,
                     onCheckedChange = actions.onAutoPurgeChange
                 )

@@ -35,7 +35,11 @@
     <string name="auto_fetch">Obtener datos de la página</string>
     <string name="auto_fetch_desc">Al guardar un enlace nuevo, obtiene su título, descripción e imagen de la web</string>
     <string name="auto_purge_trash">Vaciar la papelera automáticamente</string>
-    <string name="auto_purge_trash_desc">Elimina los marcadores que llevan más de %1$d días en la papelera</string>
+    <plurals name="auto_purge_trash_desc">
+        <item quantity="one">Elimina los marcadores que llevan más de %1$d día en la papelera</item>
+        <item quantity="other">Elimina los marcadores que llevan más de %1$d días en la papelera</item>
+        <item quantity="many">Elimina los marcadores que llevan más de %1$d días en la papelera</item>
+    </plurals>
     <string name="backup_desc">Exporta todos tus marcadores (con carpetas, etiquetas y notas) en un fichero HTML que cualquier navegador puede importar, o importa los marcadores de Chrome, Firefox, Safari, Edge… También admite ficheros de texto con enlaces.</string>
     <string name="backup_failed">No se pudo completar: %1$s</string>
     <string name="backup_in_progress">Procesando…</string>
@@ -312,7 +316,11 @@
     <string name="title_hint">Título</string>
     <string name="trash">Papelera</string>
     <string name="trash_banner">Los marcadores de la papelera se conservan hasta que la vacíes.</string>
-    <string name="trash_banner_auto">Los marcadores se eliminan tras %1$d días en la papelera.</string>
+    <plurals name="trash_banner_auto">
+        <item quantity="one">Los marcadores se eliminan tras %1$d día en la papelera.</item>
+        <item quantity="other">Los marcadores se eliminan tras %1$d días en la papelera.</item>
+        <item quantity="many">Los marcadores se eliminan tras %1$d días en la papelera.</item>
+    </plurals>
     <string name="undo">Deshacer</string>
     <string name="unlock">Desbloquear</string>
     <string name="unsaved_message">Tienes cambios sin guardar.</string>

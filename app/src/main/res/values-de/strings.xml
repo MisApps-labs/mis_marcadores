@@ -34,7 +34,10 @@
     <string name="auto_fetch">Seitendetails abrufen</string>
     <string name="auto_fetch_desc">Beim Speichern eines neuen Links Titel, Beschreibung und Bild von der Website holen</string>
     <string name="auto_purge_trash">Papierkorb automatisch leeren</string>
-    <string name="auto_purge_trash_desc">Lesezeichen löschen, die länger als %1$d Tage im Papierkorb liegen</string>
+    <plurals name="auto_purge_trash_desc">
+        <item quantity="one">Lesezeichen löschen, die länger als %1$d Tag im Papierkorb liegen</item>
+        <item quantity="other">Lesezeichen löschen, die länger als %1$d Tage im Papierkorb liegen</item>
+    </plurals>
     <string name="backup_desc">Exportiere alle Lesezeichen (mit Ordnern, Tags und Notizen) als HTML-Datei, die jeder Browser importieren kann, oder importiere die Lesezeichen von Chrome, Firefox, Safari, Edge… Auch Textdateien mit Links werden unterstützt.</string>
     <string name="backup_failed">Vorgang fehlgeschlagen: %1$s</string>
     <string name="backup_in_progress">Wird verarbeitet…</string>
@@ -298,7 +301,10 @@
     <string name="title_hint">Titel</string>
     <string name="trash">Papierkorb</string>
     <string name="trash_banner">Lesezeichen im Papierkorb bleiben, bis du ihn leerst.</string>
-    <string name="trash_banner_auto">Lesezeichen werden nach %1$d Tagen im Papierkorb gelöscht.</string>
+    <plurals name="trash_banner_auto">
+        <item quantity="one">Lesezeichen werden nach %1$d Tag im Papierkorb gelöscht.</item>
+        <item quantity="other">Lesezeichen werden nach %1$d Tagen im Papierkorb gelöscht.</item>
+    </plurals>
     <string name="undo">Rückgängig</string>
     <string name="unlock">Entsperren</string>
     <string name="unsaved_message">Du hast ungespeicherte Änderungen.</string>

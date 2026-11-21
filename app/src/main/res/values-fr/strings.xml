@@ -35,7 +35,11 @@
     <string name="auto_fetch">Récupérer les infos de la page</string>
     <string name="auto_fetch_desc">Lors de l’ajout d’un lien, récupère son titre, sa description et son image depuis le site</string>
     <string name="auto_purge_trash">Vider la corbeille automatiquement</string>
-    <string name="auto_purge_trash_desc">Supprimer les favoris qui sont dans la corbeille depuis plus de %1$d jours</string>
+    <plurals name="auto_purge_trash_desc">
+        <item quantity="one">Supprimer les favoris qui sont dans la corbeille depuis plus de %1$d jour</item>
+        <item quantity="other">Supprimer les favoris qui sont dans la corbeille depuis plus de %1$d jours</item>
+        <item quantity="many">Supprimer les favoris qui sont dans la corbeille depuis plus de %1$d jours</item>
+    </plurals>
     <string name="backup_desc">Exportez tous vos favoris (avec dossiers, étiquettes et notes) dans un fichier HTML que tout navigateur peut importer, ou importez les favoris de Chrome, Firefox, Safari, Edge… Les fichiers texte contenant des liens sont aussi acceptés.</string>
     <string name="backup_failed">Échec de l’opération : %1$s</string>
     <string name="backup_in_progress">Traitement…</string>
@@ -312,7 +316,11 @@
     <string name="title_hint">Titre</string>
     <string name="trash">Corbeille</string>
     <string name="trash_banner">Les favoris de la corbeille sont conservés jusqu’à ce que vous la vidiez.</string>
-    <string name="trash_banner_auto">Les favoris sont supprimés après %1$d jours dans la corbeille.</string>
+    <plurals name="trash_banner_auto">
+        <item quantity="one">Les favoris sont supprimés après %1$d jour dans la corbeille.</item>
+        <item quantity="other">Les favoris sont supprimés après %1$d jours dans la corbeille.</item>
+        <item quantity="many">Les favoris sont supprimés après %1$d jours dans la corbeille.</item>
+    </plurals>
     <string name="undo">Annuler</string>
     <string name="unlock">Déverrouiller</string>
     <string name="unsaved_message">Vous avez des modifications non enregistrées.</string>

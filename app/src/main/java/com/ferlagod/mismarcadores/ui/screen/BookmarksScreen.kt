@@ -318,7 +318,7 @@ fun BookmarksScreen(
             if (isTrash && bookmarks.isNotEmpty()) {
                 item(key = "trash_banner", span = { GridItemSpan(maxLineSpan) }) {
                     InfoBanner(
-                        text = if (autoPurgeTrash) stringResource(R.string.trash_banner_auto, AppSettings.TRASH_RETENTION_DAYS)
+                        text = if (autoPurgeTrash) pluralStringResource(R.plurals.trash_banner_auto, AppSettings.TRASH_RETENTION_DAYS, AppSettings.TRASH_RETENTION_DAYS)
                         else stringResource(R.string.trash_banner),
                         actionLabel = stringResource(R.string.empty_trash),
                         onAction = { confirmEmptyTrash = true }
